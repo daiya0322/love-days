@@ -1,8 +1,10 @@
 export interface Photo {
   id: string;
-  dataUrl: string;
+  url: string;
+  storagePath: string;
   caption: string;
   date: string;
+  createdAt: string;
 }
 
 export interface Message {

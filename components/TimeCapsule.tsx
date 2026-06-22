@@ -8,6 +8,7 @@ interface Props {
   partner1: string;
   partner2: string;
   startDate: string;
+  currentUserName?: string;
   onAdd:    (c: TimeCapsule) => void;
   onSeal:   (id: string, name: string, text: string, photo?: string) => void;
   onOpen:   (id: string) => void;
@@ -39,7 +40,7 @@ const LBL: React.CSSProperties = {
 };
 
 /* ─────────────────────────────────────── */
-export default function TimeCapsuleView({ capsules, partner1, partner2, startDate, onAdd, onSeal, onOpen, onDelete }: Props) {
+export default function TimeCapsuleView({ capsules, partner1, partner2, startDate, currentUserName, onAdd, onSeal, onOpen, onDelete }: Props) {
   const [view,            setView]            = useState<'list'|'create'>('list');
   const [title,           setTitle]           = useState('');
   const [openDate,        setOpenDate]        = useState('');
@@ -148,6 +149,7 @@ export default function TimeCapsuleView({ capsules, partner1, partner2, startDat
           <CapsuleCard
             key={c.id}
             capsule={c}
+            currentUserName={currentUserName}
             onSeal={(name,text,photo)=>onSeal(c.id,name,text,photo)}
             onOpen={()=>onOpen(c.id)}
             onDelete={()=>setConfirmDeleteId(c.id)}
@@ -226,12 +228,13 @@ function SealRing() {
 /* ── カプセルカード ── */
 interface CardProps {
   capsule: TimeCapsule;
+  currentUserName?: string;
   onSeal:  (name: string, text: string, photo?: string) => void;
   onOpen:  () => void;
   onDelete:() => void;
 }
 
-function CapsuleCard({ capsule, onSeal, onOpen, onDelete }: CardProps) {
+function CapsuleCard({ capsule, currentUserName, onSeal, onOpen, onDelete }: CardProps) {
   const until   = daysUntil(capsule.openDate);
   const isLocked = until > 0;
   const isReady  = until <= 0 && !capsule.isOpened;
@@ -346,6 +349,8 @@ function CapsuleCard({ capsule, onSeal, onOpen, onDelete }: CardProps) {
               <span style={{ flex:1, fontSize:'14px', fontWeight:600, color: m.isSealed ? 'var(--t1)' : 'var(--t3)' }}>{m.name}</span>
               {m.isSealed
                 ? <span style={{ fontSize:'10px', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--accent)', background:'var(--accent-dim)', border:'1px solid var(--bd2)', padding:'4px 10px', borderRadius:'12px' }}>封印済み</span>
+                : currentUserName && m.name !== currentUserName
+                ? <span style={{ fontSize:'10px', color:'var(--t4)', letterSpacing:'0.06em' }}>待機中</span>
                 : <button onClick={()=>setWritingFor(writingFor===m.name ? null : m.name)} style={{
                     padding:'6px 14px', borderRadius:'10px', fontSize:'12px', fontWeight:700,
                     fontFamily:'inherit', cursor:'pointer', transition:'all 0.18s',
