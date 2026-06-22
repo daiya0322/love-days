@@ -261,6 +261,24 @@ export default function HomePage() {
         {/* ホームタブ */}
         {tab === 'home' && (
           <div key="home">
+
+            {/* 相手未参加バナー */}
+            {!couple.partner2_id && (
+              <div className="au" style={{ marginBottom:'16px', padding:'14px 18px', borderRadius:'14px', background:'rgba(255,26,110,0.07)', border:'1px solid rgba(255,26,110,0.20)', display:'flex', alignItems:'center', gap:'12px' }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ fontSize:'11px', color:'var(--t3)', marginBottom:'4px', letterSpacing:'0.04em' }}>相手がまだ参加していません</p>
+                  <p style={{ fontFamily:'var(--font-display, monospace)', fontSize:'18px', fontWeight:800, color:'var(--accent)', letterSpacing:'0.08em' }}>{couple.invite_code}</p>
+                </div>
+                <button
+                  onClick={() => navigator.clipboard?.writeText(couple.invite_code)}
+                  className="btn-ghost"
+                  style={{ padding:'8px 14px', fontSize:'12px', flexShrink:0 }}
+                >
+                  コピー
+                </button>
+              </div>
+            )}
+
             <div style={{ position:'relative', marginBottom:'16px' }}>
               <div style={{ position:'absolute', inset:'-6px', borderRadius:'26px', background:'rgba(255,26,110,0.16)', filter:'blur(14px)', zIndex:0 }} />
               <div className="glass" style={{ position:'relative', zIndex:1, padding:'44px 24px 36px', textAlign:'center', overflow:'hidden', background:'rgba(12,4,14,0.72)' }}>
