@@ -52,6 +52,28 @@ export type CapsuleMsgRow = {
   created_at: string;
 };
 
+export type EventRow = {
+  id: string;
+  couple_id: string;
+  title: string;
+  date: string;
+  time_of_day: string | null;
+  location: string | null;
+  memo: string | null;
+  category: string;
+  created_by: string;
+  created_at: string;
+};
+
+export type EventInput = {
+  title: string;
+  date: string;
+  time_of_day: string | null;
+  location: string | null;
+  memo: string | null;
+  category: string;
+};
+
 export const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!

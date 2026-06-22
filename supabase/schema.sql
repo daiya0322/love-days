@@ -222,6 +222,62 @@ create policy "authors can update own capsule messages"
   using (author_id = auth.uid());
 
 -- ============================================================
+-- events テーブル
+-- ============================================================
+
+create table if not exists events (
+  id          uuid primary key default gen_random_uuid(),
+  couple_id   uuid references couples on delete cascade not null,
+  title       varchar(200) not null,
+  date        date not null,
+  time_of_day time,
+  location    varchar(200),
+  memo        text,
+  category    varchar(20) not null default 'その他',
+  created_by  uuid references auth.users not null,
+  created_at  timestamptz default now()
+);
+
+alter table events enable row level security;
+
+create policy "couple members can read events"
+  on events for select
+  using (
+    couple_id in (
+      select id from couples
+      where partner1_id = auth.uid() or partner2_id = auth.uid()
+    )
+  );
+
+create policy "couple members can insert events"
+  on events for insert
+  with check (
+    couple_id in (
+      select id from couples
+      where partner1_id = auth.uid() or partner2_id = auth.uid()
+    )
+    and created_by = auth.uid()
+  );
+
+create policy "couple members can update events"
+  on events for update
+  using (
+    couple_id in (
+      select id from couples
+      where partner1_id = auth.uid() or partner2_id = auth.uid()
+    )
+  );
+
+create policy "couple members can delete events"
+  on events for delete
+  using (
+    couple_id in (
+      select id from couples
+      where partner1_id = auth.uid() or partner2_id = auth.uid()
+    )
+  );
+
+-- ============================================================
 -- join_couple RPC（招待コードで参加）
 -- ============================================================
 

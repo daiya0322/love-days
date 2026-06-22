@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, getPhotoUrl, CoupleRow, PhotoRow, MessageRow, TimeCapsuleRow, CapsuleMsgRow } from '@/lib/supabase';
+import { supabase, getPhotoUrl, CoupleRow, PhotoRow, MessageRow, TimeCapsuleRow, CapsuleMsgRow, EventRow, EventInput } from '@/lib/supabase';
 import { getDaysTogether, getNextMilestone, formatDate } from '@/lib/calculations';
 import { Photo, Message, TimeCapsule } from '@/lib/storage';
 import DayCounter from '@/components/DayCounter';
@@ -10,10 +10,16 @@ import PhotoGallery from '@/components/PhotoGallery';
 import Messages from '@/components/Messages';
 import HeartBg from '@/components/HeartBg';
 import TimeCapsuleView from '@/components/TimeCapsule';
-import { IconHeart, IconCamera, IconMail, IconSettings, IconBox } from '@/components/Icons';
+import CalendarView from '@/components/Calendar';
+import { IconHeart, IconCamera, IconMail, IconSettings, IconBox, IconCalendar } from '@/components/Icons';
 import type { User } from '@supabase/supabase-js';
 
-type Tab = 'home' | 'photos' | 'messages' | 'capsule';
+type Tab = 'home' | 'photos' | 'messages' | 'capsule' | 'calendar';
+
+function parseLocalDateStr(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -23,6 +29,7 @@ export default function HomePage() {
   const [dbMessages,  setDbMessages]  = useState<MessageRow[]>([]);
   const [dbCapsules,  setDbCapsules]  = useState<TimeCapsuleRow[]>([]);
   const [dbCapMsgs,   setDbCapMsgs]   = useState<CapsuleMsgRow[]>([]);
+  const [dbEvents,    setDbEvents]    = useState<EventRow[]>([]);
   const [tab,         setTab]         = useState<Tab>('home');
   const [mounted,     setMounted]     = useState(false);
 
@@ -49,6 +56,11 @@ export default function HomePage() {
     }
   }, []);
 
+  const fetchEvents = useCallback(async (coupleId: string) => {
+    const { data } = await supabase.from('events').select('*').eq('couple_id', coupleId).order('date', { ascending: true });
+    setDbEvents(data ?? []);
+  }, []);
+
   useEffect(() => {
     setMounted(true);
     supabase.auth.getUser().then(async ({ data: { user: u } }) => {
@@ -68,9 +80,10 @@ export default function HomePage() {
         fetchPhotos(coupleData.id),
         fetchMessages(coupleData.id),
         fetchCapsules(coupleData.id),
+        fetchEvents(coupleData.id),
       ]);
     });
-  }, [router, fetchPhotos, fetchMessages, fetchCapsules]);
+  }, [router, fetchPhotos, fetchMessages, fetchCapsules, fetchEvents]);
 
   // Realtime 同期
   useEffect(() => {
@@ -81,9 +94,10 @@ export default function HomePage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages',          filter: `couple_id=eq.${couple.id}` }, () => fetchMessages(couple.id))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'time_capsules',     filter: `couple_id=eq.${couple.id}` }, () => fetchCapsules(couple.id))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'capsule_messages' }, () => fetchCapsules(couple.id))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events',            filter: `couple_id=eq.${couple.id}` }, () => fetchEvents(couple.id))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [couple, fetchPhotos, fetchMessages, fetchCapsules]);
+  }, [couple, fetchPhotos, fetchMessages, fetchCapsules, fetchEvents]);
 
   // ── データ変換 ──
   const photos: Photo[] = dbPhotos.map(p => ({
@@ -126,6 +140,19 @@ export default function HomePage() {
 
   const myName  = couple?.partner1_id === user?.id ? couple?.partner1_name : couple?.partner2_name;
   const bgPhoto = photos.length > 0 ? photos[photos.length - 1].url : undefined;
+
+  // 次の予定（今日以降で最初のイベント）
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  const nextEvent = dbEvents
+    .filter(e => parseLocalDateStr(e.date) >= todayMidnight)
+    .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null;
+
+  function daysUntil(dateStr: string): number {
+    const evDate = parseLocalDateStr(dateStr);
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    return Math.max(0, Math.ceil((evDate.getTime() - now.getTime()) / 86400000));
+  }
 
   // ── ハンドラ ──
   async function handlePhotoAdd(file: File, caption: string) {
@@ -198,6 +225,38 @@ export default function HomePage() {
     await fetchCapsules(couple!.id);
   }
 
+  async function handleEventAdd(data: EventInput) {
+    if (!couple || !user) return;
+    await supabase.from('events').insert({
+      couple_id:   couple.id,
+      title:       data.title,
+      date:        data.date,
+      time_of_day: data.time_of_day,
+      location:    data.location,
+      memo:        data.memo,
+      category:    data.category,
+      created_by:  user.id,
+    });
+    await fetchEvents(couple.id);
+  }
+
+  async function handleEventUpdate(id: string, data: EventInput) {
+    await supabase.from('events').update({
+      title:       data.title,
+      date:        data.date,
+      time_of_day: data.time_of_day,
+      location:    data.location,
+      memo:        data.memo,
+      category:    data.category,
+    }).eq('id', id);
+    await fetchEvents(couple!.id);
+  }
+
+  async function handleEventDelete(id: string) {
+    await supabase.from('events').delete().eq('id', id);
+    await fetchEvents(couple!.id);
+  }
+
   if (!mounted || !couple) return (
     <div style={{ minHeight:'100dvh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--bg)' }}>
       <div style={{ width:'32px', height:'32px', borderRadius:'50%', border:'2px solid var(--bd2)', borderTopColor:'var(--accent)', animation:'spin 0.8s linear infinite' }} />
@@ -208,11 +267,12 @@ export default function HomePage() {
   const days = getDaysTogether(couple.start_date);
   const next = getNextMilestone(couple.start_date);
 
-  const NAV = [
-    { id:'home'     as Tab, Icon: IconHeart,  label:'ホーム' },
-    { id:'photos'   as Tab, Icon: IconCamera, label:'思い出' },
-    { id:'messages' as Tab, Icon: IconMail,   label:'レター' },
-    { id:'capsule'  as Tab, Icon: IconBox,    label:'カプセル' },
+  const NAV: { id: Tab; Icon: React.FC<{ size?: number; strokeWidth?: number }>; label: string }[] = [
+    { id: 'home',     Icon: IconHeart,    label: 'ホーム' },
+    { id: 'photos',   Icon: IconCamera,   label: '思い出' },
+    { id: 'messages', Icon: IconMail,     label: 'レター' },
+    { id: 'capsule',  Icon: IconBox,      label: 'カプセル' },
+    { id: 'calendar', Icon: IconCalendar, label: 'カレンダー' },
   ];
 
   return (
@@ -300,6 +360,33 @@ export default function HomePage() {
               </div>
             )}
 
+            {/* 次の予定ウィジェット */}
+            {nextEvent && (
+              <div
+                className="glass-sm"
+                style={{ padding:'18px 20px', display:'flex', alignItems:'center', gap:'16px', marginBottom:'16px', cursor:'pointer', borderColor:'rgba(96,165,250,0.30)' }}
+                onClick={() => setTab('calendar')}
+              >
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--t3)', marginBottom:'4px' }}>Next event</p>
+                  <p style={{ fontSize:'17px', fontWeight:600, color:'var(--t1)', letterSpacing:'-0.01em', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{nextEvent.title}</p>
+                  {nextEvent.location && (
+                    <p style={{ fontSize:'11px', color:'var(--t4)', marginTop:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{nextEvent.location}</p>
+                  )}
+                </div>
+                <div style={{ textAlign:'right', flexShrink:0 }}>
+                  {daysUntil(nextEvent.date) === 0 ? (
+                    <p style={{ fontSize:'16px', fontWeight:700, color:'#60A5FA', letterSpacing:'-0.02em', lineHeight:1 }}>今日</p>
+                  ) : (
+                    <>
+                      <p style={{ fontSize:'34px', fontWeight:700, color:'var(--t1)', letterSpacing:'-0.03em', lineHeight:1 }}>{daysUntil(nextEvent.date)}</p>
+                      <p style={{ fontSize:'9px', fontWeight:600, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--t4)', marginTop:'2px' }}>days left</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div style={{ marginTop:'32px' }} className="au">
               <MilestoneCards startDate={couple.start_date} currentDays={days} />
             </div>
@@ -343,6 +430,18 @@ export default function HomePage() {
             />
           </div>
         )}
+
+        {tab === 'calendar' && (
+          <div key="calendar" className="au">
+            <CalendarView
+              events={dbEvents}
+              startDate={couple.start_date}
+              onAdd={handleEventAdd}
+              onUpdate={handleEventUpdate}
+              onDelete={handleEventDelete}
+            />
+          </div>
+        )}
       </div>
 
       {/* ボトムナビ */}
@@ -358,14 +457,14 @@ export default function HomePage() {
             const active = tab === id;
             return (
               <button key={id} onClick={() => setTab(id)} style={{
-                flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'5px',
-                background:'none', border:'none', cursor:'pointer', padding:'12px 8px 4px',
+                flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'4px',
+                background:'none', border:'none', cursor:'pointer', padding:'11px 4px 4px',
                 color: active ? 'var(--accent)' : 'var(--t4)',
                 transition:'color 0.2s ease',
                 fontFamily:'inherit',
               }}>
-                <Icon size={21} strokeWidth={active ? 1.8 : 1.2} />
-                <span style={{ fontSize:'9px', fontWeight: active ? 700 : 500, letterSpacing:'0.10em', textTransform:'uppercase' }}>{label}</span>
+                <Icon size={20} strokeWidth={active ? 1.8 : 1.2} />
+                <span style={{ fontSize:'8px', fontWeight: active ? 700 : 500, letterSpacing:'0.08em', textTransform:'uppercase' }}>{label}</span>
               </button>
             );
           })}
