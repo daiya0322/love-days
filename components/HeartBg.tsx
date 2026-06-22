@@ -1,41 +1,51 @@
 'use client';
-import { useEffect, useState } from 'react';
 
-interface Particle { id: number; x: number; size: number; delay: number; duration: number; }
+interface Props { bgPhoto?: string; }
 
-export default function HeartBg() {
-  const [particles, setParticles] = useState<Particle[]>([]);
-  useEffect(() => {
-    setParticles(Array.from({ length: 12 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      size: Math.random() * 14 + 8,
-      delay: Math.random() * 8,
-      duration: Math.random() * 10 + 12,
-    })));
-  }, []);
-
+export default function HeartBg({ bgPhoto }: Props) {
   return (
-    <div style={{ position:'fixed', inset:0, pointerEvents:'none', overflow:'hidden', zIndex:0 }}>
-      {/* グロー */}
-      <div style={{ position:'absolute', top:'-15%', left:'50%', transform:'translateX(-50%)', width:'700px', height:'700px', borderRadius:'50%', background:'radial-gradient(circle, rgba(255,107,157,0.10) 0%, transparent 65%)' }} />
-      <div style={{ position:'absolute', bottom:'-20%', right:'-10%', width:'500px', height:'500px', borderRadius:'50%', background:'radial-gradient(circle, rgba(192,132,252,0.08) 0%, transparent 65%)' }} />
-      {/* 浮遊ハート */}
-      {particles.map(p => (
-        <div key={p.id} style={{
-          position:'absolute', bottom:'-30px', left:`${p.x}%`,
-          fontSize:`${p.size}px`, opacity:0.15,
-          animation:`floatUp ${p.duration}s ${p.delay}s ease-in infinite`,
-        }}>💗</div>
-      ))}
-      <style>{`
-        @keyframes floatUp {
-          0%   { transform:translateY(0) scale(0.8); opacity:0; }
-          10%  { opacity:0.15; }
-          90%  { opacity:0.08; }
-          100% { transform:translateY(-110vh) scale(1.2); opacity:0; }
-        }
-      `}</style>
+    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+      {bgPhoto && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: `url(${bgPhoto})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'blur(60px) saturate(0.4) brightness(0.16)',
+          transform: 'scale(1.1)',
+          opacity: 0.80,
+        }} />
+      )}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: bgPhoto
+          ? 'linear-gradient(180deg, rgba(14,5,16,0.38) 0%, rgba(14,5,16,0.62) 36%, rgba(14,5,16,0.95) 100%)'
+          : 'transparent',
+      }} />
+      {/* メイングロー（上部中央）— ラズベリーピンク */}
+      <div style={{
+        position: 'absolute',
+        top: '-12%', left: '50%', transform: 'translateX(-50%)',
+        width: '680px', height: '580px', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(255,26,110,0.16) 0%, rgba(255,26,110,0.05) 45%, transparent 70%)',
+        animation: 'breathe 8s ease-in-out infinite',
+      }} />
+      {/* サブグロー（左） */}
+      <div style={{
+        position: 'absolute',
+        top: '20%', left: '-14%',
+        width: '360px', height: '360px', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(255,130,184,0.09) 0%, transparent 70%)',
+        animation: 'breatheSlow 13s ease-in-out infinite 2s',
+      }} />
+      {/* ディープローズグロー（右下） */}
+      <div style={{
+        position: 'absolute',
+        bottom: '8%', right: '-10%',
+        width: '400px', height: '400px', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(192,0,78,0.09) 0%, transparent 70%)',
+        animation: 'breatheSlow 16s ease-in-out infinite 4s',
+      }} />
     </div>
   );
 }

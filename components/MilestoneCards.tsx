@@ -1,43 +1,43 @@
 'use client';
 import { getMilestones, formatDate } from '@/lib/calculations';
-
 interface Props { startDate: string; currentDays: number; }
-
-const EMOJIS: Record<number, string> = { 100:'💯', 200:'💕', 365:'🌸', 500:'🌟', 1000:'💎', 1500:'👑', 2000:'🏆', 3650:'✨' };
-
 export default function MilestoneCards({ startDate, currentDays }: Props) {
   const milestones = getMilestones(startDate);
-
+  const nextIdx    = milestones.findIndex(m => !m.isPast);
   return (
     <div>
-      <h3 style={{ fontSize:'13px', fontWeight:700, letterSpacing:'0.12em', color:'var(--t3)', textTransform:'uppercase', marginBottom:'14px' }}>記念日マイルストーン</h3>
-      <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+      <p style={{ fontSize:'10px', fontWeight:700, letterSpacing:'0.24em', textTransform:'uppercase', color:'var(--t3)', marginBottom:'16px' }}>Timeline</p>
+      <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
         {milestones.map((m, i) => {
-          const isNext = !m.isPast && milestones.findIndex(x => !x.isPast) === i;
+          const isNext   = i === nextIdx;
+          const daysLeft = m.days - currentDays;
           return (
-            <div key={m.days} className="card" style={{
-              padding:'16px 18px',
-              display:'flex', alignItems:'center', gap:'14px',
-              border: isNext ? '1px solid rgba(255,107,157,0.4)' : undefined,
-              background: m.isPast ? 'rgba(255,107,157,0.06)' : isNext ? 'rgba(255,107,157,0.08)' : 'var(--card)',
-              transition:'transform 0.2s',
+            <div key={m.days} style={{
+              display:'flex', alignItems:'center', padding:'16px 20px', gap:'16px',
+              background: isNext ? 'rgba(255,95,168,0.09)' : 'var(--s1)',
+              border:`1px solid ${isNext ? 'rgba(255,95,168,0.24)' : 'var(--bd1)'}`,
+              borderRadius: i===0 ? '16px 16px 4px 4px' : i===milestones.length-1 ? '4px 4px 16px 16px' : '4px',
+              backdropFilter:'blur(32px)',
             }}>
-              <div style={{ fontSize:'22px', flexShrink:0 }}>{EMOJIS[m.days] ?? '💗'}</div>
+              <div style={{ width:8, height:8, borderRadius:'50%', flexShrink:0,
+                background: m.isPast ? 'var(--accent)' : isNext ? 'rgba(255,95,168,0.8)' : 'var(--t4)',
+                border: m.isPast || isNext ? 'none' : '1.5px solid var(--bd2)',
+                boxShadow: isNext ? '0 0 10px rgba(255,95,168,0.55)' : 'none',
+              }} />
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:'14px', fontWeight:800, color: m.isPast ? 'var(--t1)' : isNext ? '#FF9A8B' : 'var(--t2)' }}>
-                  {m.label}
-                  {isNext && <span style={{ fontSize:'10px', background:'linear-gradient(135deg,#FF6B9D,#FF9A8B)', color:'white', borderRadius:'99px', padding:'2px 8px', marginLeft:'8px', fontWeight:700 }}>NEXT</span>}
-                </div>
-                <div style={{ fontSize:'11px', color:'var(--t3)', marginTop:'2px' }}>{formatDate(m.date)}</div>
+                <div style={{ fontSize:'14px', fontWeight: isNext ? 700 : 500,
+                  color: m.isPast ? 'var(--t2)' : isNext ? 'var(--accent)' : 'var(--t3)',
+                }}>{m.label}</div>
+                <div style={{ fontSize:'11px', fontWeight:500, color:'var(--t4)', marginTop:'2px' }}>{formatDate(m.date)}</div>
               </div>
               <div style={{ textAlign:'right', flexShrink:0 }}>
-                {m.isPast ? (
-                  <div style={{ fontSize:'18px' }}>✅</div>
-                ) : (
-                  <div style={{ fontSize:'12px', color: isNext ? '#FF9A8B' : 'var(--t3)', fontWeight:700 }}>
-                    あと{m.days - currentDays}日
-                  </div>
-                )}
+                {m.isPast
+                  ? <div style={{ fontSize:'10px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--accent)' }}>達成</div>
+                  : <div>
+                      <div style={{ fontSize:'16px', fontWeight:700, color: isNext ? 'var(--t1)' : 'var(--t3)', letterSpacing:'-0.02em' }}>{daysLeft}</div>
+                      <div style={{ fontSize:'9px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color:'var(--t4)' }}>days left</div>
+                    </div>
+                }
               </div>
             </div>
           );
