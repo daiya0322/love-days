@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { EventRow, EventInput } from '@/lib/supabase';
 import { getMilestones, Milestone } from '@/lib/calculations';
 import { IconPlus, IconX, IconTrash } from './Icons';
@@ -58,6 +59,8 @@ export default function CalendarView({ events, startDate, onAdd, onUpdate, onDel
   const [showForm,      setShowForm]      = useState(false);
   const [editingEvent,  setEditingEvent]  = useState<EventRow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [isMounted,     setIsMounted]     = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
 
   const [fTitle,    setFTitle]    = useState('');
   const [fDate,     setFDate]     = useState('');
@@ -319,16 +322,16 @@ export default function CalendarView({ events, startDate, onAdd, onUpdate, onDel
         </div>
       )}
 
-      {/* Add / Edit form modal */}
-      {showForm && (
+      {/* Add / Edit form modal — createPortal で document.body 直下に描画しスタッキングコンテキスト問題を回避 */}
+      {isMounted && showForm && createPortal(
         <div
           onClick={() => setShowForm(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(14,5,16,0.90)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(14,5,16,0.90)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
         >
           <div
             onClick={e => e.stopPropagation()}
             className="glass-warm"
-            style={{ width: '100%', maxWidth: '480px', borderRadius: '24px 24px 0 0', padding: '24px 24px 44px', maxHeight: '88vh', overflowY: 'auto' }}
+            style={{ width: '100%', maxWidth: '480px', borderRadius: '24px 24px 0 0', padding: '24px 24px', paddingBottom: 'max(44px, calc(24px + env(safe-area-inset-bottom)))', maxHeight: '88vh', overflowY: 'auto' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--t1)' }}>
@@ -436,14 +439,15 @@ export default function CalendarView({ events, startDate, onAdd, onUpdate, onDel
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Delete confirm */}
-      {confirmDelete && (
+      {/* Delete confirm — 同じくportalで描画 */}
+      {isMounted && confirmDelete && createPortal(
         <div
           onClick={() => setConfirmDelete(null)}
-          style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(14,5,16,0.90)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '28px' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 9100, background: 'rgba(14,5,16,0.90)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '28px' }}
         >
           <div
             onClick={e => e.stopPropagation()}
@@ -464,7 +468,8 @@ export default function CalendarView({ events, startDate, onAdd, onUpdate, onDel
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
