@@ -16,22 +16,24 @@ export default function AuthPage() {
     setError(''); setLoading(true);
 
     try {
-      if (mode === 'register') {
-        const { error: err } = await supabase.auth.signUp({ email: email.trim(), password: pass });
-        if (err) throw err;
-      } else {
-        const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pass });
-        if (err) throw err;
-      }
+      let uid: string;
 
-      // カップルに参加済みか確認
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('認証に失敗しました');
+      if (mode === 'register') {
+        const { data, error: err } = await supabase.auth.signUp({ email: email.trim(), password: pass });
+        if (err) throw err;
+        if (!data.user) throw new Error('確認メールを送信しました。メールを確認後にログインしてください');
+        uid = data.user.id;
+      } else {
+        const { data, error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pass });
+        if (err) throw err;
+        if (!data.user) throw new Error('認証に失敗しました');
+        uid = data.user.id;
+      }
 
       const { data: couple } = await supabase
         .from('couples')
         .select('id')
-        .or(`partner1_id.eq.${user.id},partner2_id.eq.${user.id}`)
+        .or(`partner1_id.eq.${uid},partner2_id.eq.${uid}`)
         .maybeSingle();
 
       router.replace(couple ? '/home' : '/auth/setup');
