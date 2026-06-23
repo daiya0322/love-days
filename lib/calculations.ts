@@ -22,7 +22,7 @@ export interface Milestone {
   daysLeft: number; // 未達成なら残り日数、達成済みなら 0
 }
 
-const MILESTONE_DAYS = [100, 200, 365, 500, 1000, 1500, 2000, 3650];
+const MILESTONE_DAYS = [100, 200, 300, 365, 500, 1000];
 
 // 365 の倍数のみ「○周年」、それ以外は「○日」
 function milestoneLabel(days: number): string {
