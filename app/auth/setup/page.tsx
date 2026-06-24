@@ -169,11 +169,11 @@ export default function CoupleSetupPage() {
         <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
           <div>
             <label style={LBL}>あなたの名前</label>
-            <input className="inp" placeholder="Daiya" value={p1} onChange={e => setP1(e.target.value)} style={{ padding:'14px 16px' }} />
+            <input className="inp" placeholder="名前を入力" value={p1} onChange={e => setP1(e.target.value)} style={{ padding:'14px 16px' }} />
           </div>
           <div>
-            <label style={LBL}>相手の名前</label>
-            <input className="inp" placeholder="Yui" value={p2} onChange={e => setP2(e.target.value)} style={{ padding:'14px 16px' }} />
+            <label style={LBL}>恋人の名前</label>
+            <input className="inp" placeholder="名前を入力" value={p2} onChange={e => setP2(e.target.value)} style={{ padding:'14px 16px' }} />
           </div>
           <div>
             <label style={LBL}>付き合い始めた日</label>
