@@ -11,6 +11,7 @@ import Messages from '@/components/Messages';
 import HeartBg from '@/components/HeartBg';
 import TimeCapsuleView from '@/components/TimeCapsule';
 import CalendarView from '@/components/Calendar';
+import NotificationChecker from '@/components/NotificationChecker';
 import { IconHeart, IconCamera, IconMail, IconSettings, IconBox, IconCalendar } from '@/components/Icons';
 import type { User } from '@supabase/supabase-js';
 
@@ -278,6 +279,7 @@ export default function HomePage() {
   return (
     <main style={{ minHeight:'100dvh', background:'var(--bg)', position:'relative', paddingBottom:'90px' }}>
       <HeartBg bgPhoto={bgPhoto} />
+      <NotificationChecker startDate={couple.start_date} events={dbEvents} capsules={dbCapsules} />
 
       <div style={{ position:'relative', zIndex:1, maxWidth:'480px', margin:'0 auto', padding:'0 22px' }}>
 
